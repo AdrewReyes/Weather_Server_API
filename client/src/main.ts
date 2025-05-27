@@ -21,7 +21,7 @@ API Calls
 
 const fetchWeather = async (cityName: string) => {
   try {
-    const response = await fetch('/api/weather/', {
+    const response = await fetch('https://weather-server-api-v2v8.onrender.com/api/weather/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ const fetchWeather = async (cityName: string) => {
 };
 
 const fetchSearchHistory = async () => {
-  const response = await fetch('/api/weather/history', {
+  const response = await fetch('https://weather-server-api-v2v8.onrender.com/api/weather/history', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
