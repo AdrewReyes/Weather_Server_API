@@ -9,10 +9,13 @@ interface Coordinates {
 }
 // TODO: Define a class for the Weather object
 interface Weather {
-  temperature: number;
-  humidity: number;
+  city: string;
+  date: string;
+  icon: string;
+  iconDescription: string;
+  tempF: number;
   windSpeed: number;
-  description: string;
+  humidity: number;
 }
 // TODO: Complete the WeatherService class
 class WeatherService {
@@ -54,20 +57,55 @@ class WeatherService {
     return response.json();
   }
 
-  private parseCurrentWeather(response: any): Weather {
-    return {
-      temperature: response.list[0].main.temp,
-      humidity: response.list[0].main.humidity,
-      windSpeed: response.list[0].wind.speed,
-      description: response.list[0].weather[0].description,
-    };
+ private parseCurrentWeather(response: any): Weather {
+  return {
+    city: response.city.name,
+    date: response.list[0].dt_txt,
+    icon: response.list[0].weather[0].icon,
+    iconDescription: response.list[0].weather[0].description,
+    tempF: this.kelvinToFahrenheit(response.list[0].main.temp),
+    windSpeed: response.list[0].wind.speed,
+    humidity: response.list[0].main.humidity,
+  };
+}
+
+  private kelvinToFahrenheit(kelvin: number): number {
+    return Math.round((kelvin - 273.15) * 9/5 + 32);
   }
 
-  async getWeatherForCity(city: string): Promise<Weather> {
-    const coordinates = await this.fetchLocationData(city);
-    const weatherData = await this.fetchWeatherData(coordinates);
-    return this.parseCurrentWeather(weatherData);
+private buildForecastArray(weatherData: any): Weather[] {
+  // OpenWeather's 5-day forecast gives data every 3 hours.
+  // We'll pick the forecast for 12:00:00 each day.
+  const forecasts: Weather[] = [];
+  const usedDates = new Set();
+
+  for (const entry of weatherData.list) {
+    const date = entry.dt_txt.split(' ')[0];
+    const time = entry.dt_txt.split(' ')[1];
+    if (time === '12:00:00' && !usedDates.has(date)) {
+      forecasts.push({
+        city: weatherData.city.name,
+        date: entry.dt_txt,
+        icon: entry.weather[0].icon,
+        iconDescription: entry.weather[0].description,
+        tempF: this.kelvinToFahrenheit(entry.main.temp),
+        windSpeed: entry.wind.speed,
+        humidity: entry.main.humidity,
+      });
+      usedDates.add(date);
+    }
+    if (forecasts.length === 5) break;
   }
+  return forecasts;
+}
+
+async getWeatherForCity(city: string): Promise<Weather[]> {
+  const coordinates = await this.fetchLocationData(city);
+  const weatherData = await this.fetchWeatherData(coordinates);
+  const currentWeather = this.parseCurrentWeather(weatherData);
+  const forecastArray = this.buildForecastArray(weatherData);
+  return [currentWeather, ...forecastArray];
+}
 }
 
 export default new WeatherService();

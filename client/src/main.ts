@@ -12,21 +12,6 @@ const forecastContainer = document.querySelector('#forecast') as HTMLDivElement;
 const searchHistoryContainer = document.getElementById(
   'history'
 ) as HTMLDivElement;
-const heading: HTMLHeadingElement = document.getElementById(
-  'search-title'
-) as HTMLHeadingElement;
-const weatherIcon: HTMLImageElement = document.getElementById(
-  'weather-img'
-) as HTMLImageElement;
-const tempEl: HTMLParagraphElement = document.getElementById(
-  'temp'
-) as HTMLParagraphElement;
-const windEl: HTMLParagraphElement = document.getElementById(
-  'wind'
-) as HTMLParagraphElement;
-const humidityEl: HTMLParagraphElement = document.getElementById(
-  'humidity'
-) as HTMLParagraphElement;
 
 /*
 
@@ -35,30 +20,44 @@ API Calls
 */
 
 const fetchWeather = async (cityName: string) => {
-  const response = await fetch('/api/weather/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ cityName }),
-  });
+  try {
+    const response = await fetch('/api/weather/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cityName }),
+    });
 
-  const weatherData = await response.json();
+    if (!response.ok) {
+      const error = await response.json();
+      alert(error.error || 'Failed to fetch weather data.');
+      return;
+    }
 
-  console.log('weatherData: ', weatherData);
+    const weatherData = await response.json();
+    console.log('weatherData:', weatherData);
 
-  renderCurrentWeather(weatherData[0]);
-  renderForecast(weatherData.slice(1));
+    if (!weatherData || !weatherData.length) {
+      alert('No weather data returned.');
+      return;
+    }
+
+    renderCurrentWeather(weatherData[0]);
+    renderForecast(weatherData.slice(1));
+  } catch (err) {
+    alert('Network error: ' + err);
+  }
 };
 
 const fetchSearchHistory = async () => {
-  const history = await fetch('/api/weather/history', {
+  const response = await fetch('/api/weather/history', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
   });
-  return history;
+  return response.json(); // <-- parse here
 };
 
 const deleteCityFromHistory = async (id: string) => {
@@ -80,8 +79,10 @@ const renderCurrentWeather = (currentWeather: any): void => {
   const { city, date, icon, iconDescription, tempF, windSpeed, humidity } =
     currentWeather;
 
-  // convert the following to typescript
+  const heading = document.createElement('h2');
   heading.textContent = `${city} (${date})`;
+
+  const weatherIcon = document.createElement('img');
   weatherIcon.setAttribute(
     'src',
     `https://openweathermap.org/img/w/${icon}.png`
@@ -89,8 +90,14 @@ const renderCurrentWeather = (currentWeather: any): void => {
   weatherIcon.setAttribute('alt', iconDescription);
   weatherIcon.setAttribute('class', 'weather-img');
   heading.append(weatherIcon);
+
+  const tempEl = document.createElement('p');
   tempEl.textContent = `Temp: ${tempF}°F`;
+
+  const windEl = document.createElement('p');
   windEl.textContent = `Wind: ${windSpeed} MPH`;
+
+  const humidityEl = document.createElement('p');
   humidityEl.textContent = `Humidity: ${humidity} %`;
 
   if (todayContainer) {
@@ -139,9 +146,7 @@ const renderForecastCard = (forecast: any) => {
   }
 };
 
-const renderSearchHistory = async (searchHistory: any) => {
-  const historyList = await searchHistory.json();
-
+const renderSearchHistory = async (historyList: any) => {
   if (searchHistoryContainer) {
     searchHistoryContainer.innerHTML = '';
 
@@ -150,7 +155,6 @@ const renderSearchHistory = async (searchHistory: any) => {
         '<p class="text-center">No Previous Search History</p>';
     }
 
-    // * Start at end of history array and count down to show the most recent cities at the top.
     for (let i = historyList.length - 1; i >= 0; i--) {
       const historyItem = buildHistoryListItem(historyList[i]);
       searchHistoryContainer.append(historyItem);
@@ -251,11 +255,10 @@ Event Handlers
 
 const handleSearchFormSubmit = (event: any): void => {
   event.preventDefault();
-
   if (!searchInput.value) {
-    throw new Error('City cannot be blank');
+    alert('City cannot be blank');
+    return;
   }
-
   const search: string = searchInput.value.trim();
   fetchWeather(search).then(() => {
     getAndRenderHistory();
