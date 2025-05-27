@@ -16,12 +16,14 @@ const PORT = process.env.PORT || 3001;
 
 // TODO: Serve static files of entire client dist folder
 app.use(express.static(path.join(__dirname, '../../client/dist')));
-
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 // TODO: Implement middleware for parsing JSON and urlencoded form data
-app.get('*', (_, res) => {
-  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+
 // TODO: Implement middleware to connect the routes
 app.use(routes);
+app.get('*', (_, res) => {
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 // Start the server on the port
 app.listen(PORT, () => console.log(`Listening on PORT: ${PORT}`));
