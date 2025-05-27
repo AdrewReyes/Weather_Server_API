@@ -135,7 +135,7 @@ Set these in your `.env` file (for local) and in Render’s environment settings
 
 ## Deployment
 
-This app is deployed on [Render](https://render.com/).
+This app is deployed on [Render](https://dashboard.render.com/web/srv-d0qm3e3e5dus739mdmug)
 
 **Build Command:**
 ```
